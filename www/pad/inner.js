@@ -843,6 +843,41 @@ define([
             editor.fire('cp-wc'); // Update word count
         });
         editor.on('change', framework.localChange);
+        
+        /*
+            Set authorcolor style when a key is pressed
+        */
+
+        // get user color for author marks
+        var authorcolor = framework._.sfCommon.getMetadataMgr().getUserData().color;
+        var authorcolor_r = parseInt("0x" + authorcolor.slice(1,3));
+        var authorcolor_g = parseInt("0x" + authorcolor.slice(3,5));
+        var authorcolor_b = parseInt("0x" + authorcolor.slice(5,7));
+        var authorcolor_min = Math.min(authorcolor_r, authorcolor_g, authorcolor_b);
+
+        // set minimal brightness for author marks and calculate color
+        tarMinColorVal = 180;
+        if (authorcolor_min < tarMinColorVal) {
+            facColor = (255-tarMinColorVal)/(255-authorcolor_min);
+            authorcolor_r = Math.floor(255-facColor*(255-authorcolor_r));
+            authorcolor_g = Math.floor(255-facColor*(255-authorcolor_g));
+            authorcolor_b = Math.floor(255-facColor*(255-authorcolor_b));
+            authorcolor = "#" + authorcolor_r.toString(16) + authorcolor_g.toString(16) + authorcolor_b.toString(16);
+        }
+
+        // create background-color style for ckeditor
+        var authorcolorStyle = new CKEDITOR.style( {element: 'span', styles: { 'background-color' : authorcolor } } );
+
+        inner.addEventListener('keypress', function () {
+            var curHtmlEl = editor.getSelection().getStartElement().$;
+
+            // aply style when no style or a style with different color is active
+            if ((curHtmlEl != undefined && curHtmlEl.localName != undefined && curHtmlEl.localName != "span") ||
+                (curHtmlEl.attributes != undefined && curHtmlEl.attributes.style != undefined && curHtmlEl.attributes.style.value != undefined && curHtmlEl.attributes.style.value.substring(17,24) != authorcolor)) {
+                editor.applyStyle(authorcolorStyle);
+            }
+        });
+
 
         var wordCount = h('span.cp-app-pad-wordCount');
         $('.cke_toolbox_main').append(wordCount);
